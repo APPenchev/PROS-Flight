@@ -1,1 +1,1 @@
-This project is a coding assessment from PROS 
+This project is a submission for an internship coding assessment from PROS 
