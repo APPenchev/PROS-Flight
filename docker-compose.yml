@@ -12,6 +12,11 @@ services:
       - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   springboot:
     build: .
@@ -28,7 +33,8 @@ services:
       SPRING_RESOURCES_STATIC-LOCATIONS: classpath:/static/,classpath:/public/,classpath:/resources/,classpath:/META-INF/resources/
       SPRING_PROFILES_ACTIVE: mysql
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 
 volumes:
   mysql-data:
