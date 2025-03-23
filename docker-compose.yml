@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: flightdb
+      MYSQL_USER: flightuser
+      MYSQL_PASSWORD: flightpass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  springboot:
+    build: .
+    container_name: springboot
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/flightdb?createDatabaseIfNotExist=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: flightuser
+      SPRING_DATASOURCE_PASSWORD: flightpass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQLDialect
+      SPRING_RESOURCES_STATIC-LOCATIONS: classpath:/static/,classpath:/public/,classpath:/resources/,classpath:/META-INF/resources/
+      SPRING_PROFILES_ACTIVE: mysql
+    depends_on:
+      - mysql
+
+volumes:
+  mysql-data:

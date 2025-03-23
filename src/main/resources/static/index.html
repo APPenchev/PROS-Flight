@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html ng-app="flightApp">
+<head>
+    <meta charset="UTF-8">
+    <title>Flight Routes</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <style>
+        .section {
+        margin-bottom: 30px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        }
+        .success {
+        color: green;
+        font-weight: bold;
+        }
+        .error {
+        color: red;
+        font-weight: bold;
+        }
+    </style>
+</head>
+<body ng-controller="FlightController">
+<h1>Flight Management System</h1>
+<!-- Create New Flight Section -->
+<div class="section">
+    <h2>Create New Flight</h2>
+    <form ng-submit="createFlight()">
+        <label>Source City: <input type="text" ng-model="newFlight.source" required /></label><br>
+        <label>Destination City: <input type="text" ng-model="newFlight.destination" required /></label><br>
+        <label>Price: <input type="number" step="0.01" ng-model="newFlight.price" required /></label><br>
+        <button type="submit">Create Flight</button>
+    </form>
+    <p class="success" ng-if="createSuccess">Flight created successfully!</p>
+    <p class="error" ng-if="createError">{{createErrorMessage}}</p>
+    <div>
+        <h3>Bulk Upload Flights (JSON)</h3>
+        <textarea ng-model="bulkFlightsJson" placeholder='Enter flights in JSON format:
+               [
+               {"source": "ABC", "destination": "DEF", "price": 100},
+               {"source": "GHI", "destination": "JKL", "price": 200}
+               ]' rows="5" cols="50"></textarea>
+        <br>
+        <button ng-click="uploadBulkFlights()">Upload</button>
+        <p class="success" ng-if="bulkUploadSuccess">Flights uploaded successfully!</p>
+        <p class="error" ng-if="bulkUploadError">{{bulkUploadErrorMessage}}</p>
+    </div>
+</div>
+<!-- Find Flight Routes Section -->
+<div class="section">
+    <h2>Find Flight Routes</h2>
+    <form ng-submit="findRoutes()">
+        <label>Origin: <input type="text" ng-model="route.origin" required /></label><br>
+        <label>Destination: <input type="text" ng-model="route.destination" required /></label><br>
+        <label>Max Flights (optional): <input type="number" ng-model="route.maxFlights" /></label><br>
+        <button type="submit">Search</button>
+    </form>
+    <hr>
+    <h3>Routes</h3>
+    <div ng-if="routes.length === 0">
+        No routes found.
+    </div>
+    <ul>
+        <li ng-repeat="r in routes">
+            Cities: {{r.cities.join(' -> ')}}, Total Price: {{r.totalPrice}}
+        </li>
+    </ul>
+</div>
+<div class="section">
+    <h2>All Flights</h2>
+    <button ng-click="getAllFlights()">Load Flights</button>
+    <button ng-click="clearAllFlights()">Clear All Flights</button>
+    <div class="error" ng-if="clearAllFlightsError">{{clearAllFlightsErrorMessage}}</div>
+    <hr>
+    <div ng-if="allFlights.length === 0 && flightsLoaded">
+        No flights available.
+    </div>
+    <ul>
+        <li ng-repeat="flight in allFlights">
+            {{flight.source}} -> {{flight.destination}}, Price: {{flight.price}}
+        </li>
+    </ul>
+</div>
+<script>
+    angular.module('flightApp', [])
+        .controller('FlightController', function($scope, $http) {
+            // For finding routes
+            $scope.route = {};
+            $scope.routes = [];
+
+            // For creating flights
+            $scope.newFlight = {
+                source: '',
+                destination: '',
+                price: 0
+            };
+            $scope.createSuccess = false;
+            $scope.createError = false;
+            $scope.createErrorMessage = '';
+
+            //For displaying flights
+            $scope.allFlights = [];
+            $scope.flightsLoaded = false;
+
+            // Create flight function
+            $scope.createFlight = function() {
+                // Reset status messages
+                $scope.createSuccess = false;
+                $scope.createError = false;
+
+                $http.post('/api/create', $scope.newFlight)
+                    .then(function(response) {
+                        $scope.createSuccess = true;
+                        // Reset form after successful creation
+                        $scope.newFlight = {
+                            source: '',
+                            destination: '',
+                            price: 0
+                        };
+                        $scope.getAllFlights();  // Refresh flight list after creation
+                    }, function(error) {
+                        $scope.createError = true;
+                        if (error.data && error.data.message) {
+                            $scope.createErrorMessage = error.data.message;
+                        } else {
+                            $scope.createErrorMessage = 'An error occurred while creating the flight.';
+                        }
+                        console.error('Error creating flight:', error);
+                    });
+            };
+
+            // Find routes function
+            $scope.findRoutes = function() {
+                $http.post('/api/routes', $scope.route)
+                    .then(function(response) {
+                        $scope.routes = response.data;
+                    }, function(error) {
+                        console.error('Error fetching routes:', error);
+                    });
+            };
+
+            // Get all flights function
+            $scope.getAllFlights = function() {
+                $http.get('/api/flights')
+                    .then(function(response) {
+                        $scope.allFlights = response.data;
+                        $scope.flightsLoaded = true;
+                    }, function(error) {
+                        console.error('Error fetching all flights:', error);
+                        $scope.flightsLoaded = true;
+                    });
+            };
+
+            //Initial loading of flights (optional)
+            // $scope.getAllFlights();
+            $scope.clearAllFlights = function() {
+    $http.delete('/api/flights') // Define your backend DELETE endpoint
+        .then(function() {
+            $scope.clearAllFlightsError = false; // Reset error state
+            $scope.allFlights = []; // Clear the flight list locally
+            location.reload(); // Refresh the page to reflect changes
+        }, function(error) {
+            $scope.clearAllFlightsError = true;
+            $scope.clearAllFlightsErrorMessage = 'Failed to clear flights. Please try again.';
+            console.error("Error clearing flights:", error); // Log the error
+        });
+    };
+
+
+                $scope.bulkFlightsJson = "";
+                $scope.bulkUploadSuccess = false;
+                $scope.bulkUploadError = false;
+                $scope.bulkUploadErrorMessage = '';
+
+                $scope.uploadBulkFlights = function () {
+                    $scope.bulkUploadSuccess = false;
+                    $scope.bulkUploadError = false;
+
+                    try {
+                        const flights = JSON.parse($scope.bulkFlightsJson);
+                        $http.post('/api/bulkcreate', flights) // Define your backend endpoint
+                            .then(function (response) {
+                                $scope.bulkUploadSuccess = true;
+                                $scope.bulkFlightsJson = ""; // Clear input field
+                                $scope.getAllFlights(); // Refresh the flight list
+                            }, function (error) {
+                                $scope.bulkUploadError = true;
+                                if (error.data && error.data.message) {
+                                    $scope.bulkUploadErrorMessage = error.data.message;
+                                } else {
+                                    $scope.bulkUploadErrorMessage = "An error occurred during bulk upload.";
+                                }
+                                console.error("Error uploading flights:", error);
+                            });
+                    } catch (e) {
+                        $scope.bulkUploadError = true;
+                        $scope.bulkUploadErrorMessage = "Invalid JSON format. Please check your input.";
+                    }
+                };
+
+        });
+</script>
+</body>
+</html>
