@@ -85,11 +85,9 @@
 <script>
     angular.module('flightApp', [])
         .controller('FlightController', function($scope, $http) {
-            // For finding routes
             $scope.route = {};
             $scope.routes = [];
 
-            // For creating flights
             $scope.newFlight = {
                 source: '',
                 destination: '',
@@ -99,26 +97,22 @@
             $scope.createError = false;
             $scope.createErrorMessage = '';
 
-            //For displaying flights
             $scope.allFlights = [];
             $scope.flightsLoaded = false;
 
-            // Create flight function
             $scope.createFlight = function() {
-                // Reset status messages
                 $scope.createSuccess = false;
                 $scope.createError = false;
 
                 $http.post('/api/create', $scope.newFlight)
                     .then(function(response) {
                         $scope.createSuccess = true;
-                        // Reset form after successful creation
                         $scope.newFlight = {
                             source: '',
                             destination: '',
                             price: 0
                         };
-                        $scope.getAllFlights();  // Refresh flight list after creation
+                        $scope.getAllFlights();
                     }, function(error) {
                         $scope.createError = true;
                         if (error.data && error.data.message) {
@@ -130,7 +124,6 @@
                     });
             };
 
-            // Find routes function
             $scope.findRoutes = function() {
                 $http.post('/api/routes', $scope.route)
                     .then(function(response) {
@@ -140,7 +133,6 @@
                     });
             };
 
-            // Get all flights function
             $scope.getAllFlights = function() {
                 $http.get('/api/flights')
                     .then(function(response) {
@@ -152,18 +144,16 @@
                     });
             };
 
-            //Initial loading of flights (optional)
-            // $scope.getAllFlights();
             $scope.clearAllFlights = function() {
-    $http.delete('/api/flights') // Define your backend DELETE endpoint
+    $http.delete('/api/flights')
         .then(function() {
-            $scope.clearAllFlightsError = false; // Reset error state
-            $scope.allFlights = []; // Clear the flight list locally
-            location.reload(); // Refresh the page to reflect changes
+            $scope.clearAllFlightsError = false;
+            $scope.allFlights = [];
+            location.reload();
         }, function(error) {
             $scope.clearAllFlightsError = true;
             $scope.clearAllFlightsErrorMessage = 'Failed to clear flights. Please try again.';
-            console.error("Error clearing flights:", error); // Log the error
+            console.error("Error clearing flights:", error);
         });
     };
 
@@ -179,11 +169,11 @@
 
                     try {
                         const flights = JSON.parse($scope.bulkFlightsJson);
-                        $http.post('/api/bulkcreate', flights) // Define your backend endpoint
+                        $http.post('/api/bulkcreate', flights)
                             .then(function (response) {
                                 $scope.bulkUploadSuccess = true;
-                                $scope.bulkFlightsJson = ""; // Clear input field
-                                $scope.getAllFlights(); // Refresh the flight list
+                                $scope.bulkFlightsJson = "";
+                                $scope.getAllFlights();
                             }, function (error) {
                                 $scope.bulkUploadError = true;
                                 if (error.data && error.data.message) {

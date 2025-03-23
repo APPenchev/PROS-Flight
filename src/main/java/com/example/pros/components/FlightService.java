@@ -68,9 +68,9 @@ public class FlightService {
         }
 
         for (FlightInfoDto flight : graph.get(current)) {
-            currentPath.add(flight.destination); // Add before recursive call
+            currentPath.add(flight.destination);
             dfs(graph, flight.destination, destination, currentPath, currentPrice + flight.price, routes, maxFlights);
-            currentPath.remove(currentPath.size() - 1);  // Backtrack: Remove the last element *after* the recursive call
+            currentPath.remove(currentPath.size() - 1);
         }
     }
 
